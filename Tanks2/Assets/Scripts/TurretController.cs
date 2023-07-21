@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 
 public class TurretController : MonoBehaviour
@@ -11,7 +12,6 @@ public class TurretController : MonoBehaviour
     SphereCollider sphereCollider;
     [SerializeField] GameObject cannon;
     [SerializeField] float reloadTime;
-    [SerializeField] GameObject bullet;
     [SerializeField] GameObject bulletSpawner;
     [SerializeField] float rotSpeed;
     [SerializeField] float minScatter=1;
@@ -52,6 +52,9 @@ public class TurretController : MonoBehaviour
     Coroutine coroutine=null;
     Image scope;
     [SerializeField] Color standartBulletColor;
+    [SerializeField] TextMeshProUGUI  gearNumerator;
+    [SerializeField] Vector2 gearNumberOffset;
+   
     Color chosenBulletColor=Color.green;
     int chosenBulletIndex=-1;
     Dictionary<int,Image> bulletImageKeys=new Dictionary<int,Image>();
@@ -207,6 +210,9 @@ public class TurretController : MonoBehaviour
                 bulletSpawner.transform.LookAt(hit2.point);
             }
             GameObject bul= Instantiate(bulletTypes[chosenBulletIndex-1].bullet,bulletSpawner.transform.position,bulletSpawner.transform.rotation);
+            CheckBulletComponents(ref bul);
+           
+
             bul.SendMessage("SetDamage",bulletTypes[chosenBulletIndex-1].damage);
             bul.SendMessage("SetPenetration",bulletTypes[chosenBulletIndex-1].penetration);
             bul.SendMessage("SetOrigin",this.gameObject);
@@ -350,7 +356,7 @@ public class TurretController : MonoBehaviour
            spawnedImage.transform.SetParent(canvas.gameObject.transform);
            spawnedImage.transform.localPosition=screenPos;
            spawnedImage.transform.localScale=new Vector3(0.4f,0.4f,0.4f);
-        
+            SetGearNumber(j+1,screenPos);
            bulletImageKeys.Add(j+1,spawnedImage);
 
             BulletImageCharacteritics bulletCharacteristic;
@@ -360,7 +366,7 @@ public class TurretController : MonoBehaviour
            }
            else
            {
-            Debug.Log("Please set Scritp BulletImageCharacteritics on bullet image "+definedImage.name);
+            Debug.Log("Please set Script BulletImageCharacteritics on bullet image "+definedImage.name);
            }
            --i;   
            j++;
@@ -395,6 +401,48 @@ public class TurretController : MonoBehaviour
                 parent=parent.parent;
             }
             return false;
+        }
+    }
+    void SetGearNumber(int number,Vector2 imagePos)
+    {
+        if(gearNumerator)
+        {
+            TextMeshProUGUI text;
+            //Vector2 pos=new Vector2(imagePos.x,imagePos.y-offsetY);
+            Vector2 pos=imagePos-gearNumberOffset;
+            Vector2 screenPos;
+            if(RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas, pos, Camera.main, out screenPos))
+            {
+                text=GameObject.Instantiate(gearNumerator,pos,canvas.transform.rotation);
+                text.transform.SetParent(canvas.gameObject.transform);
+                text.text=number.ToString();
+                text.transform.localPosition=screenPos;
+                text.transform.localScale=new Vector3(1,1,1);
+            }
+        }
+        else
+        Debug.Log("Please set text for gear");
+    }
+    void CheckBulletComponents(ref GameObject bul)
+    {
+        
+        if(!(bul.TryGetComponent<Bullet>(out Bullet bullet)))
+        bul.AddComponent<Bullet>();
+        if(!bul.TryGetComponent<Rigidbody>(out Rigidbody rigidbody))
+        {
+        bul.AddComponent<Rigidbody>();
+        Rigidbody rigit=bul.GetComponent<Rigidbody>();
+        rigit.collisionDetectionMode=CollisionDetectionMode.ContinuousDynamic;
+        }
+        if(!bul.TryGetComponent<Collider>(out Collider collider))
+        {
+        bul.AddComponent<MeshCollider>();
+        MeshCollider meshCollider=bul.GetComponent<MeshCollider>();
+        meshCollider.convex=true;
+        }
+        if(bul.layer!=3)
+        {
+            bul.layer=3;
         }
     }
 }
